@@ -23,6 +23,8 @@ import com.ib.controller.AccountSummaryTag;
 import com.ib.controller.AdvisorUtil;
 import com.ib.controller.Alias;
 import com.ib.controller.ApiConnection;
+import com.ib.controller.ApiController.IAccountSummaryHandler;
+import com.ib.controller.ApiController.IMarketValueSummaryHandler;
 import com.ib.controller.Bar;
 import com.ib.controller.ConcurrentHashSet;
 import com.ib.controller.Group;
@@ -138,107 +140,16 @@ public class ApiOrderPlacer  implements EWrapper{
 		recEOM();
 	}
 
-	@Override public void connectionClosed() {
-		m_connectionHandler.disconnected();
-	}
-
-
-	// ---------------------------------------- Account and portfolio updates ----------------------------------------
 	
-	@Override public void updateAccountValue(String tag, String value, String currency, String account) {
-		recEOM();
-	}
 
-	@Override public void updateAccountTime(String timeStamp) {
-		recEOM();
-	}
-
-	@Override public void accountDownloadEnd(String account) {
-		recEOM();
-	}
-
-	@Override public void updatePortfolio(Contract contractIn, int positionIn, double marketPrice, double marketValue, double averageCost, double unrealizedPNL, double realizedPNL, String account) {
-		recEOM();
-	}
-
-	// ---------------------------------------- Account Summary handling ----------------------------------------
-	public interface IAccountSummaryHandler {
-		void accountSummary( String account, AccountSummaryTag tag, String value, String currency);
-		void accountSummaryEnd();
-	}
-
-	public interface IMarketValueSummaryHandler {
-		void marketValueSummary( String account, MarketValueTag tag, String value, String currency);
-		void marketValueSummaryEnd();
-	}
-
-	/** @param group pass "All" to get data for all accounts */
-	public void reqAccountSummary(String group, AccountSummaryTag[] tags, IAccountSummaryHandler handler) {
-		StringBuilder sb = new StringBuilder();
-		for (AccountSummaryTag tag : tags) {
-			if (sb.length() > 0) {
-				sb.append( ',');
-			}
-			sb.append( tag);
-		}
-
-		int reqId = m_reqId++;
-		m_acctSummaryHandlers.put( reqId, handler);
-		m_client.reqAccountSummary( reqId, group, sb.toString() );
-		sendEOM();
-	}
-
-	public void cancelAccountSummary(IAccountSummaryHandler handler) {
-		Integer reqId = getAndRemoveKey( m_acctSummaryHandlers, handler);
-		if (reqId != null) {
-			m_client.cancelAccountSummary( reqId);
-			sendEOM();
-		}
-	}
-
-	public void reqMarketValueSummary(String group, IMarketValueSummaryHandler handler) {
-		int reqId = m_reqId++;
-		m_mktValSummaryHandlers.put( reqId, handler);
-		m_client.reqAccountSummary( reqId, group, "$LEDGER");
-		sendEOM();
-	}
-
-	public void cancelMarketValueSummary(IMarketValueSummaryHandler handler) {
-		Integer reqId = getAndRemoveKey( m_mktValSummaryHandlers, handler);
-		if (reqId != null) {
-			m_client.cancelAccountSummary( reqId);
-			sendEOM();
-		}
-	}
+	
 
 	@Override public void accountSummary( int reqId, String account, String tag, String value, String currency) {
-		if (tag.equals( "Currency") ) { // ignore this, it is useless
-			return;
-		}
-
-		IAccountSummaryHandler handler = m_acctSummaryHandlers.get( reqId);
-		if (handler != null) {
-			handler.accountSummary(account, AccountSummaryTag.valueOf( tag), value, currency);
-		}
-
-		IMarketValueSummaryHandler handler2 = m_mktValSummaryHandlers.get( reqId);
-		if (handler2 != null) {
-			handler2.marketValueSummary(account, MarketValueTag.valueOf( tag), value, currency);
-		}
 
 		recEOM();
 	}
 
 	@Override public void accountSummaryEnd( int reqId) {
-		IAccountSummaryHandler handler = m_acctSummaryHandlers.get( reqId);
-		if (handler != null) {
-			handler.accountSummaryEnd();
-		}
-
-		IMarketValueSummaryHandler handler2 = m_mktValSummaryHandlers.get( reqId);
-		if (handler2 != null) {
-			handler2.marketValueSummaryEnd();
-		}
 
 		recEOM();
 	}
@@ -413,6 +324,7 @@ public class ApiOrderPlacer  implements EWrapper{
 		if (handler != null) {
 			handler.tickPrice( NewTickType.get( tickType), price, canAutoExecute);
 		}
+		System.out.println(price);
 		recEOM();
 	}
 
@@ -765,5 +677,27 @@ public class ApiOrderPlacer  implements EWrapper{
 	public void currentTime(long time) {
 		// TODO Auto-generated method stub
 		
+	}
+	@Override public void connectionClosed() {
+		m_connectionHandler.disconnected();
+	}
+
+
+	// ---------------------------------------- Account and portfolio updates ----------------------------------------
+	
+	@Override public void updateAccountValue(String tag, String value, String currency, String account) {
+		recEOM();
+	}
+
+	@Override public void updateAccountTime(String timeStamp) {
+		recEOM();
+	}
+
+	@Override public void accountDownloadEnd(String account) {
+		recEOM();
+	}
+
+	@Override public void updatePortfolio(Contract contractIn, int positionIn, double marketPrice, double marketValue, double averageCost, double unrealizedPNL, double realizedPNL, String account) {
+		recEOM();
 	}
 }

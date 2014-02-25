@@ -39,18 +39,26 @@ public class Demo implements IConnectionHandler {
 		contract.localSymbol();
 		contract.tradingClass();
 		
-		INSTANCE.m_controller.reqTopMktData(contract, "", false, null);
+//		INSTANCE.m_controller.reqTopMktData(contract, "", false, null);
+		
 		NewOrder order = new NewOrder();
-		order.orderId(150);
+		order.orderId();
 		order.action(Action.BUY);
-		order.totalQuantity(100);
+		order.totalQuantity(200);
 		order.orderType(OrderType.MKT);
 		order.account("DU128546");
 		INSTANCE.m_controller.placeOrModifyOrder(contract, order, null);
+		INSTANCE.m_controller.disconnect();
 	}
 	private void run() {
         // make initial connection to local host, port 7496, client id 0
 		m_controller.connect( "127.0.0.1", 7496, 0);
+		try {
+			Thread.sleep(5000);
+		} catch (InterruptedException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
     }
 	@Override
 	public void connected() {
